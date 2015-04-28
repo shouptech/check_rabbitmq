@@ -55,3 +55,13 @@ docs/_build/
 
 # PyBuilder
 target/
+
+# simplejson
+# This is added because I'm using this program on a box with Python 2.4, and
+# simplejson is needed for json processing. I don't have an easy way to install
+# the simplejson package, so I store with the program in the Nagios libexec
+# folder.
+simplejson/
+
+# Ignore autoenv file
+.env
