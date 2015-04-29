@@ -7,6 +7,7 @@
 
 from optparse import OptionParser
 import sys
+import urllib
 import urllib2
 import base64
 import math
@@ -128,6 +129,28 @@ class RabbitAPIChecker(object):
 
         return (message, state_code)
 
+    def check_aliveness(self, args):
+        """Executes an aliveness test on a specified vhost"""
+
+        # Encodes the specified vhost. Needed when vhost specified is /
+        vhost = args[1]
+        vhost_encoded = urllib.quote_plus(vhost)
+
+        url = "http://%s:%s/api/aliveness-test/%s" % (
+            self.hostname, self.port, vhost_encoded)
+
+        results = self.fetch_from_api(url)
+
+        if results['status'] != 'ok':
+            message = "CRITICAL - Aliveness Test failed for vhost '%s'" % vhost
+            state_code = self.STATE_CRITICAL
+        else:
+            message = "OK - Aliveness Test passed for vhost '%s'" % vhost
+            state_code = self.STATE_OK
+
+        return (message, state_code)
+
+
     def fetch_from_api(self, url):
         """Calls the API and processes the JSON result."""
         request = urllib2.Request(url)
@@ -175,7 +198,8 @@ def main():
                'disk_free_alarm': checker.check_triggered_alarm,
                'check_sockets': checker.check_sockets,
                'check_fd': checker.check_fd,
-               'check_nodes': checker.check_nodes}
+               'check_nodes': checker.check_nodes,
+               'check_aliveness': checker.check_aliveness}
 
     try:
         if options.critical and options.warning:
