@@ -147,18 +147,19 @@ def main():
     usage = "%prog [options] -H|--hostname HOST ACTION"
     parser = OptionParser(usage=usage,
                           version="%prog "+PLUGIN_VERSION)
-    parser.add_option("-u", "--username", default="guest",
+    parser.add_option(
+        "-u", "--username", default="guest",
         help="Username with monitoring access. Default: guest")
-    parser.add_option("-p", "--password", default="guest",
+    parser.add_option(
+        "-p", "--password", default="guest",
         help="Password for user with monitoring access Default: guest")
-    parser.add_option("-P", "--port", default=15672,
+    parser.add_option(
+        "-P", "--port", default=15672,
         help="Port to run the API checks against Default: 15672")
-    parser.add_option("-H", "--hostname",
-        help="Host to check. REQUIRED")
-    parser.add_option("-c", "--critical", type="int",
-        help="Critical level")
-    parser.add_option("-w", "--warning", type="int",
-        help="Warning level")
+    parser.add_option("-H", "--hostname", help="Host to check. REQUIRED")
+    parser.add_option("-c", "--critical", type="int", help="Critical level")
+    parser.add_option("-w", "--warning", type="int", help="Warning level")
+
     (options, args) = parser.parse_args()
 
     # Check for required arguments
