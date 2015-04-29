@@ -8,6 +8,7 @@
 from optparse import OptionParser
 import urllib2
 import base64
+import math
 
 try:
     import json
@@ -32,23 +33,45 @@ class RabbitAPIChecker(object):
         self.password = password
         self.port = port
 
-    def mem_alarm(self, args):
-        """Calls the API and checks if a high memory alarm has been
-           triggerred."""
-        node = args[0]
+    def check_triggered_alarm(self, args):
+        """Checks the node for a triggered alarm"""
+
+        alarm = args[0]
+        node = args[1]
+
         url = "http://%s:%s/api/nodes/%s" % (self.hostname, self.port, node)
         result = self.fetch_from_api(url)
 
-        if 'mem_alarm' in result:
-            if result['mem_alarm']:
-                print "CRITICAL - Memory alarm triggered for %s" % node
+        try:
+            if result[alarm]:
+                print "CRITICAL - %s triggered for %s" % (alarm, node)
                 return self.STATE_CRITICAL
             else:
-                print "OK - Memory alarm not triggered for %s" % node
+                print "OK - %s is not triggered for %s" % (alarm, node)
                 return self.STATE_OK
-        else:
-            print "UNKNOWN - mem_alarm not found in results from API"
+        except KeyError:
+            print "UNKNOWN - %s is not a valid alarm for %s" % (alarm, node)
             return self.STATE_UNKNOWN
+
+    def check_sockets(self, args, critical=90, warning=80):
+        """Checks the percentage of sockets used"""
+
+        node = args[1]
+        url = "http://%s:%s/api/nodes/%s" % (self.hostname, self.port, node)
+        result = self.fetch_from_api(url)
+
+        per_sockets_used = math.ceil(
+            100 * float(result['sockets_used']) / result['sockets_total'])
+
+        if per_sockets_used >= critical:
+            print "CRITICAL - %d%% sockets in use" % per_sockets_used
+            return self.STATE_CRITICAL
+        elif per_sockets_used >= warning:
+            print "WARNING - %d%% sockets in use" % per_sockets_used
+            return self.STATE_WARNING
+
+        print "OK - %d%% sockets in use" % per_sockets_used
+        return self.STATE_OK
 
     def fetch_from_api(self, url):
         """Calls the API and processes the JSON result."""
@@ -76,6 +99,10 @@ def main():
                       help="Port to run the API checks against")
     parser.add_option("-H", "--hostname",
                       help="Host to check")
+    parser.add_option("-c", "--critical", type="int",
+                      help="Critical level")
+    parser.add_option("-w", "--warning", type="int",
+                      help="Warning level")
     (options, args) = parser.parse_args()
 
     # Check for required arguments
@@ -87,20 +114,26 @@ def main():
                                options.password, options.port)
 
     # Define actions available, will be found in args[0]
-    actions = {'mem_alarm': checker.mem_alarm}
+    actions = {'mem_alarm': checker.check_triggered_alarm,
+               'disk_free_alarm': checker.check_triggered_alarm,
+               'sockets_used': checker.check_sockets}
 
     try:
-        if len(args) > 1:
-            return actions[args[0]](args[1:])
+        if options.critical and options.warning:
+            actions[args[0]](args[0:], options.critical, options.warning)
+        elif options.critical:
+            actions[args[0]](args[0:], options.critical)
+        elif options.warning:
+            actions[args[0]](args[0:], warning=options.warning)
         else:
-            return actions[args[0]]()
+            actions[args[0]](args[0:])
     except KeyError:
         print "UNKNOWN - %s is not a valid action" % args[0]
         return RabbitAPIChecker.STATE_UNKNOWN
     except urllib2.HTTPError, exception:
         print "UNKNOWN - %s" % exception
         return RabbitAPIChecker.STATE_UNKNOWN
-    except TypeError:
+    except IndexError:
         print "UNKNOWN - %s requires one or more options" % args[0]
         return RabbitAPIChecker.STATE_UNKNOWN
 
