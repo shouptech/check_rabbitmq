@@ -32,7 +32,7 @@ class RabbitAPIChecker(object):
         self.password = password
         self.port = port
 
-    def memory_alarm(self, args):
+    def mem_alarm(self, args):
         """Calls the API and checks if a high memory alarm has been
            triggerred."""
         node = args[0]
@@ -87,7 +87,7 @@ def main():
                                options.password, options.port)
 
     # Define actions available, will be found in args[0]
-    actions = {'mem_alarm': checker.memory_alarm}
+    actions = {'mem_alarm': checker.mem_alarm}
 
     try:
         if len(args) > 1:
