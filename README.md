@@ -3,7 +3,7 @@
 check_rabbitmq.py returns status messages for use in Nagios monitoring.
 
 ## Requirements
-Requires a Python interpreter. Tested to work with 2.4.x and above. If using 2.4.x, you'll need the simplejson package.
+Requires a Python interpreter. Tested to work with 2.4.x and above. If using 2.4.x, you'll need the simplejson package. Doesn't work with Python 3.
 
 ## Usage
 
