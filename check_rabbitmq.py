@@ -6,6 +6,7 @@
    the management API available."""
 
 from optparse import OptionParser
+import sys
 import urllib2
 import base64
 import math
@@ -75,7 +76,7 @@ class RabbitAPIChecker(object):
             message = "OK - %d%% of sockets in use" % per_sockets_used
             state_code = self.STATE_OK
 
-        return (message,state_code)
+        return (message, state_code)
 
     def check_fd(self, args, critical=90, warning=80):
         """Checks the percentage of file descriptors used"""
@@ -91,16 +92,19 @@ class RabbitAPIChecker(object):
             message = "CRITICAL - %d%% of file descriptors in use" % per_fd_used
             state_code = self.STATE_CRITICAL
         elif per_fd_used >= warning:
-            message =  "WARNING - %d%% of file descriptors in use" % per_fd_used
+            message = "WARNING - %d%% of file descriptors in use" % per_fd_used
             state_code = self.STATE_WARNING
         else:
             message = "OK - %d%% of file descriptors in use" % per_fd_used
             state_code = self.STATE_OK
 
-        return (message,state_code)
+        return (message, state_code)
 
     def check_nodes(self, args=None, critical=2, warning=1):
         """ Checks if all nodes on the cluster are running"""
+
+        if args:
+            return ("UNKNOWN - Unexpected arguments found", self.STATE_UNKNOWN)
 
         url = "http://%s:%s/api/nodes" % (self.hostname, self.port)
         results = self.fetch_from_api(url)
@@ -174,15 +178,15 @@ def main():
 
     try:
         if options.critical and options.warning:
-            (message,state_code) = actions[args[0]](
+            (message, state_code) = actions[args[0]](
                 args[0:], options.critical, options.warning)
         elif options.critical:
-            (message,state_code) = actions[args[0]](args[0:], options.critical)
+            (message, state_code) = actions[args[0]](args[0:], options.critical)
         elif options.warning:
-            (message,state_code) = actions[args[0]](
+            (message, state_code) = actions[args[0]](
                 args[0:], warning=options.warning)
         else:
-            (message,state_code) = actions[args[0]](args[0:])
+            (message, state_code) = actions[args[0]](args[0:])
     except KeyError:
         print "UNKNOWN - %s is not a valid action" % args[0]
         return RabbitAPIChecker.STATE_UNKNOWN
@@ -197,4 +201,4 @@ def main():
     return state_code
 
 if __name__ == "__main__":
-    exit(main())
+    sys.exit(main())
