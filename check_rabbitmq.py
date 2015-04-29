@@ -6,7 +6,6 @@
    the management API available."""
 
 from optparse import OptionParser
-import sys
 import urllib2
 import base64
 
@@ -18,14 +17,14 @@ except ImportError:
 
 PLUGIN_VERSION = "0.1"
 
-# Nagios status codes (Nagios expects one of these to be returned)
-STATE_OK = 0
-STATE_WARNING = 1
-STATE_CRITICAL = 2
-STATE_UNKNOWN = 3
-
 class RabbitAPIChecker(object):
     """Performs checks against the RabbitMQ API and returns the results"""
+
+    # Nagios status codes (Nagios expects one of these to be returned)
+    STATE_OK = 0
+    STATE_WARNING = 1
+    STATE_CRITICAL = 2
+    STATE_UNKNOWN = 3
 
     def __init__(self, hostname, username, password, port=15672):
         self.hostname = hostname
@@ -33,22 +32,23 @@ class RabbitAPIChecker(object):
         self.password = password
         self.port = port
 
-    def memory_alarm(self, node):
+    def memory_alarm(self, args):
         """Calls the API and checks if a high memory alarm has been
            triggerred."""
+        node = args[0]
         url = "http://%s:%s/api/nodes/%s" % (self.hostname, self.port, node)
         result = self.fetch_from_api(url)
 
         if 'mem_alarm' in result:
             if result['mem_alarm']:
                 print "CRITICAL - Memory alarm triggered for %s" % node
-                exit(STATE_CRITICAL)
+                return self.STATE_CRITICAL
             else:
                 print "OK - Memory alarm not triggered for %s" % node
-                exit(STATE_OK)
+                return self.STATE_OK
         else:
             print "UNKNOWN - mem_alarm not found in results from API"
-            exit(STATE_UNKNOWN)
+            return self.STATE_UNKNOWN
 
     def fetch_from_api(self, url):
         """Calls the API and processes the JSON result."""
@@ -57,11 +57,7 @@ class RabbitAPIChecker(object):
             '%s:%s' % (self.username, self.password)).replace('\n', '')
         request.add_header("Authorization", "Basic %s" % base64string)
 
-        try:
-            http_result = urllib2.urlopen(request)
-        except urllib2.HTTPError, exception:
-            print "UNKNOWN - %s" % exception
-            exit(STATE_UNKNOWN)
+        http_result = urllib2.urlopen(request)
 
         json_result = json.load(http_result)
         http_result.close()
@@ -85,17 +81,28 @@ def main():
     # Check for required arguments
     if len(args) < 1 or options.hostname == None:
         parser.print_usage()
-        exit(STATE_UNKNOWN)
+        return RabbitAPIChecker.STATE_UNKNOWN
 
     checker = RabbitAPIChecker(options.hostname, options.username,
                                options.password, options.port)
 
-    if args[0] == 'mem_alarm':
-        # Check if high memory alarm has been triggered
-        if len(args) < 2:
-            sys.stderr.write("Action mem_alarm requires a NODE\n")
-            exit(STATE_UNKNOWN)
-        checker.memory_alarm(args[1])
+    # Define actions available, will be found in args[0]
+    actions = {'mem_alarm': checker.memory_alarm}
+
+    try:
+        if len(args) > 1:
+            return actions[args[0]](args[1:])
+        else:
+            return actions[args[0]]()
+    except KeyError:
+        print "UNKNOWN - %s is not a valid action" % args[0]
+        return RabbitAPIChecker.STATE_UNKNOWN
+    except urllib2.HTTPError, exception:
+        print "UNKNOWN - %s" % exception
+        return RabbitAPIChecker.STATE_UNKNOWN
+    except TypeError:
+        print "UNKNOWN - %s requires one or more options" % args[0]
+        return RabbitAPIChecker.STATE_UNKNOWN
 
 if __name__ == "__main__":
-    main()
+    exit(main())
