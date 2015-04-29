@@ -44,14 +44,16 @@ class RabbitAPIChecker(object):
 
         try:
             if result[alarm]:
-                print "CRITICAL - %s triggered for %s" % (alarm, node)
-                return self.STATE_CRITICAL
+                message = "CRITICAL - %s triggered for %s" % (alarm, node)
+                state_code = self.STATE_CRITICAL
             else:
-                print "OK - %s is not triggered for %s" % (alarm, node)
-                return self.STATE_OK
+                message = "OK - %s is not triggered for %s" % (alarm, node)
+                state_code = self.STATE_OK
         except KeyError:
-            print "UNKNOWN - %s is not a valid alarm for %s" % (alarm, node)
-            return self.STATE_UNKNOWN
+            message = "UNKNOWN - %s is not a valid alarm for %s" % (alarm, node)
+            state_code = self.STATE_UNKNOWN
+
+        return (message, state_code)
 
     def check_sockets(self, args, critical=90, warning=80):
         """Checks the percentage of sockets used"""
@@ -64,14 +66,63 @@ class RabbitAPIChecker(object):
             100 * float(result['sockets_used']) / result['sockets_total'])
 
         if per_sockets_used >= critical:
-            print "CRITICAL - %d%% sockets in use" % per_sockets_used
-            return self.STATE_CRITICAL
+            message = "CRITICAL - %d%% of sockets in use" % per_sockets_used
+            state_code = self.STATE_CRITICAL
         elif per_sockets_used >= warning:
-            print "WARNING - %d%% sockets in use" % per_sockets_used
-            return self.STATE_WARNING
+            message = "WARNING - %d%% of sockets in use" % per_sockets_used
+            state_code = self.STATE_WARNING
+        else:
+            message = "OK - %d%% of sockets in use" % per_sockets_used
+            state_code = self.STATE_OK
 
-        print "OK - %d%% sockets in use" % per_sockets_used
-        return self.STATE_OK
+        return (message,state_code)
+
+    def check_fd(self, args, critical=90, warning=80):
+        """Checks the percentage of file descriptors used"""
+
+        node = args[1]
+        url = "http://%s:%s/api/nodes/%s" % (self.hostname, self.port, node)
+        result = self.fetch_from_api(url)
+
+        per_fd_used = math.ceil(
+            100 * float(result['fd_used']) / result['fd_total'])
+
+        if per_fd_used >= critical:
+            message = "CRITICAL - %d%% of file descriptors in use" % per_fd_used
+            state_code = self.STATE_CRITICAL
+        elif per_fd_used >= warning:
+            message =  "WARNING - %d%% of file descriptors in use" % per_fd_used
+            state_code = self.STATE_WARNING
+        else:
+            message = "OK - %d%% of file descriptors in use" % per_fd_used
+            state_code = self.STATE_OK
+
+        return (message,state_code)
+
+    def check_nodes(self, args=None, critical=2, warning=1):
+        """ Checks if all nodes on the cluster are running"""
+
+        url = "http://%s:%s/api/nodes" % (self.hostname, self.port)
+        results = self.fetch_from_api(url)
+
+        nodes_not_running = []
+        message = "OK - All nodes are running"
+        state_code = self.STATE_OK
+
+        for node in results:
+            if not node['running']:
+                nodes_not_running.append(node['name'])
+
+        if len(nodes_not_running) >= critical:
+            message = "CRITICAL - Found nodes not running (%s)" % (
+                ", ".join(nodes_not_running))
+            state_code = self.STATE_CRITICAL
+        elif len(nodes_not_running) >= warning:
+            message = "WARNING - Found nodes not running (%s)" % (
+                ", ".join(nodes_not_running))
+            state_code = self.STATE_WARNING
+
+        return (message, state_code)
 
     def fetch_from_api(self, url):
         """Calls the API and processes the JSON result."""
@@ -85,6 +136,7 @@ class RabbitAPIChecker(object):
         json_result = json.load(http_result)
         http_result.close()
         return json_result
+
 
 def main():
     """Main entry point for program"""
@@ -116,17 +168,21 @@ def main():
     # Define actions available, will be found in args[0]
     actions = {'mem_alarm': checker.check_triggered_alarm,
                'disk_free_alarm': checker.check_triggered_alarm,
-               'sockets_used': checker.check_sockets}
+               'check_sockets': checker.check_sockets,
+               'check_fd': checker.check_fd,
+               'check_nodes': checker.check_nodes}
 
     try:
         if options.critical and options.warning:
-            actions[args[0]](args[0:], options.critical, options.warning)
+            (message,state_code) = actions[args[0]](
+                args[0:], options.critical, options.warning)
         elif options.critical:
-            actions[args[0]](args[0:], options.critical)
+            (message,state_code) = actions[args[0]](args[0:], options.critical)
         elif options.warning:
-            actions[args[0]](args[0:], warning=options.warning)
+            (message,state_code) = actions[args[0]](
+                args[0:], warning=options.warning)
         else:
-            actions[args[0]](args[0:])
+            (message,state_code) = actions[args[0]](args[0:])
     except KeyError:
         print "UNKNOWN - %s is not a valid action" % args[0]
         return RabbitAPIChecker.STATE_UNKNOWN
@@ -136,6 +192,9 @@ def main():
     except IndexError:
         print "UNKNOWN - %s requires one or more options" % args[0]
         return RabbitAPIChecker.STATE_UNKNOWN
+
+    print message
+    return state_code
 
 if __name__ == "__main__":
     exit(main())
