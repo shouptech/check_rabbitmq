@@ -103,7 +103,7 @@ class RabbitAPIChecker(object):
     def check_nodes(self, args=None, critical=2, warning=1):
         """ Checks if all nodes on the cluster are running"""
 
-        if args:
+        if len(args) > 1:
             return ("UNKNOWN - Unexpected arguments found", self.STATE_UNKNOWN)
 
         url = "http://%s:%s/api/nodes" % (self.hostname, self.port)
