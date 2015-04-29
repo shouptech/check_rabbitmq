@@ -216,8 +216,8 @@ def main():
         print "UNKNOWN - %s is not a valid action" % args[0]
         return RabbitAPIChecker.STATE_UNKNOWN
     except urllib2.HTTPError, exception:
-        print "UNKNOWN - %s" % exception
-        return RabbitAPIChecker.STATE_UNKNOWN
+        print "CRITICAL - %s" % exception
+        return RabbitAPIChecker.STATE_CRITICAL
     except IndexError:
         print "UNKNOWN - %s requires one or more options" % args[0]
         return RabbitAPIChecker.STATE_UNKNOWN
