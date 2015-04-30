@@ -7,7 +7,9 @@ Requires a Python interpreter. Tested to work with 2.4.x and above. If using 2.4
 
 ## Usage
 
-    usage: check_rabbitmq.py [options] -H|--hostname HOST ACTION
+While you'll probably use the script inside of a Nagios check, it can be executed by itself.
+
+    usage: check_rabbitmq.py [options] -H|--hostname HOST ACTION [NODE|VHOST]
 
     options:
       --version             show program's version number and exit
@@ -69,3 +71,41 @@ Check file descriptor usage with critical threshold of 95% and warning threshold
 Checks that all nodes in the cluster are running. Default critical threshold is 2 nodes not running. Default warning threshold is 1 node not running. Specify alternate thresholds with -c/-w.
 
     check_rabbitmq.py -H rmqhost check_nodes
+
+## Nagios Usage
+
+The below details how you can use this script inside of a Nagios environment.
+
+### Commands
+
+The commands can be defined as follows. Modify to suit your environment.
+
+    define command{
+        command_name	check_rabbitmq_mem_alarm
+        command_line	$USER1$/check_rabbitmq.py -H $HOSTADDRESS$ mem_alarm rabbit\@$HOSTNAME$
+    }
+
+    define command{
+        command_name	check_rabbitmq_disk_free_alarm
+        command_line	$USER1$/check_rabbitmq.py -H $HOSTADDRESS$ disk_free_alarm rabbit\@$HOSTNAME$
+    }
+
+    define command{
+        command_name	check_rabbitmq_sockets
+        command_line	$USER1$/check_rabbitmq.py -H $HOSTADDRESS$ check_sockets rabbit\@$HOSTNAME$
+    }
+
+    define command{
+        command_name	check_rabbitmq_fd
+        command_line	$USER1$/check_rabbitmq.py -H $HOSTADDRESS$ check_fd rabbit\@$HOSTNAME$
+    }
+
+    define command{
+        command_name	check_rabbitmq_nodes
+        command_line	$USER1$/check_rabbitmq.py -H $HOSTADDRESS$ check_nodes
+    }
+
+    define command{
+        command_name	check_rabbitmq_aliveness
+        command_line	$USER1$/check_rabbitmq.py -H $HOSTADDRESS$ check_aliveness $ARG1$
+    }
