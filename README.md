@@ -109,3 +109,49 @@ The commands can be defined as follows. Modify to suit your environment.
         command_name	check_rabbitmq_aliveness
         command_line	$USER1$/check_rabbitmq.py -H $HOSTADDRESS$ check_aliveness $ARG1$
     }
+
+### Service checks
+
+With the commands above defined, the following service checks on a host should work:
+
+    define service{
+        use                     standard-service
+        host_name               rmqhost
+        service_description     RabbitMQ Aliveness Test /
+        check_command           check_rabbitmq_aliveness!/
+    }
+
+    define service{
+        use                     standard-service
+        host_name               rmqhost
+        service_description     RabbitMQ High Memory Alarm
+        check_command           check_rabbitmq_mem_alarm
+    }
+
+    define service{
+        use                     standard-service
+        host_name               rmqhost
+        service_description     RabbitMQ Disk Free Space Alarm
+        check_command           check_rabbitmq_disk_free_alarm
+    }
+
+    define service{
+        use                     standard-service
+        host_name               rmqhost
+        service_description     RabbitMQ Sockets Usage
+        check_command           check_rabbitmq_sockets
+    }
+
+    define service{
+        use                     standard-service
+        host_name               rmqhost
+        service_description     RabbitMQ File Descriptor Usage
+        check_command           check_rabbitmq_fd
+    }
+
+    define service{
+        use                     standard-service
+        host_name               rmqhost
+        service_description     RabbitMQ Node Status
+        check_command           check_rabbitmq_nodes
+    }
