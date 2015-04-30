@@ -167,7 +167,7 @@ class RabbitAPIChecker(object):
 
 def main():
     """Main entry point for program"""
-    usage = "%prog [options] -H|--hostname HOST ACTION"
+    usage = "%prog [options] -H|--hostname HOST ACTION [NODE]"
     parser = OptionParser(usage=usage,
                           version="%prog "+PLUGIN_VERSION)
     parser.add_option(
