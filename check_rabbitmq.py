@@ -18,7 +18,7 @@ except ImportError:
     # simplejson can be used with Python 2.4
     import simplejson as json
 
-PLUGIN_VERSION = "0.1"
+PLUGIN_VERSION = "0.1.1"
 
 class RabbitAPIChecker(object):
     """Performs checks against the RabbitMQ API and returns the results"""
@@ -215,7 +215,7 @@ def main():
     except KeyError:
         print "UNKNOWN - %s is not a valid action" % args[0]
         return RabbitAPIChecker.STATE_UNKNOWN
-    except urllib2.HTTPError, exception:
+    except (urllib2.HTTPError, urllib2.URLError), exception:
         print "CRITICAL - %s" % exception
         return RabbitAPIChecker.STATE_CRITICAL
     except IndexError:
