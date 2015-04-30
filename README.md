@@ -32,23 +32,17 @@ The script can perform the following actions
 
 Checks if the high memory usage alarm has been triggered on specified node. Requires an additional argument which matches the node name in the cluster.
 
-#### Example
-
     check_rabbitmq.py -H rmqhost mem_alarm rabbit@rmqhost
 
 ### disk_free_alarm
 
 Checks if the high disk usage alarm has been triggered on specified node. Requires an additional argument which matches the node name in the cluster.
 
-#### Example
-
     check_rabbitmq.py -H rmqhost disk_free_alarm rabbit@rmqhost
 
 ### check_sockets
 
 Checks for the percentage of sockets in use. Default critical threshold is 90% and default warning threshold is 80%. Specify alternate thresholds with -c/-w.
-
-#### Examples
 
 Check socket usage with default thresholds:
 
@@ -62,8 +56,6 @@ Check socket usage with critical threshold of 95% and warning threshold of 90%:
 
 Checks for the percentage of file descriptors in use. Default critical threshold is 90% and default warning threshold is 80%. Specify alternate thresholds with -c/-w.
 
-#### Examples
-
 Check file descriptor usage with default thresholds:
 
     check_rabbitmq.py -H rmqhost check_fd rabbit@rmqhost
@@ -75,7 +67,5 @@ Check file descriptor usage with critical threshold of 95% and warning threshold
 ### check_nodes
 
 Checks that all nodes in the cluster are running. Default critical threshold is 2 nodes not running. Default warning threshold is 1 node not running. Specify alternate thresholds with -c/-w.
-
-#### Example
 
     check_rabbitmq.py -H rmqhost check_nodes
